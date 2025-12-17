@@ -2,7 +2,11 @@
 aptPkgs = ['git-lfs']
 
 [phases.install]
-cmds = ['git lfs install', 'git lfs pull', 'npm ci']
+cmds = [
+    'git lfs install',
+    'git lfs pull',
+    'npm ci'
+]
 
 [phases.build]
 cmds = ['npm run build']
