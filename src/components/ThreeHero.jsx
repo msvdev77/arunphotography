@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Image, Environment, Float, Stars, Sparkles } from '@react-three/drei';
+import { Environment, Float, Stars, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { portfolioData } from '../data';
 import { motion } from 'framer-motion';
@@ -8,8 +8,31 @@ import { motion } from 'framer-motion';
 function Card({ url, position, rotation, index }) {
     const ref = useRef();
     const [hovered, hover] = useState(false);
+    const [texture, setTexture] = useState(null);
+
+    // Convert relative URL to absolute URL for Three.js texture loader
+    const absoluteUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+
+    // Load texture manually
+    useEffect(() => {
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+        loader.load(
+            absoluteUrl,
+            (loadedTexture) => {
+                loadedTexture.colorSpace = THREE.SRGBColorSpace;
+                setTexture(loadedTexture);
+            },
+            undefined,
+            (error) => {
+                console.error('Error loading texture:', absoluteUrl, error);
+            }
+        );
+    }, [absoluteUrl]);
 
     useFrame((state, delta) => {
+        if (!ref.current) return;
+
         // Smooth hover effect
         const targetScale = hovered ? 1.2 : 1;
         ref.current.scale.x = THREE.MathUtils.lerp(ref.current.scale.x, targetScale, delta * 8);
@@ -19,19 +42,19 @@ function Card({ url, position, rotation, index }) {
         ref.current.position.y = position[1] + Math.sin(state.clock.elapsedTime + index) * 0.1;
     });
 
+    if (!texture) return null;
+
     return (
-        <Image
+        <mesh
             ref={ref}
-            url={url}
-            transparent
-            side={THREE.DoubleSide}
-            onPointerOver={() => { document.body.style.cursor = 'pointer'; hover(true); }}
-            onPointerOut={() => { document.body.style.cursor = 'auto'; hover(false); }}
             position={position}
             rotation={rotation}
+            onPointerOver={() => { document.body.style.cursor = 'pointer'; hover(true); }}
+            onPointerOut={() => { document.body.style.cursor = 'auto'; hover(false); }}
         >
             <planeGeometry args={[1.2, 1.8]} />
-        </Image>
+            <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
+        </mesh>
     );
 }
 
